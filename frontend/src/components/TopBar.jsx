@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 
-export default function TopBar({ onVerify, queue, activeId, onSelectQueue, onDelete }) {
+export default function TopBar({ onVerify, onBulk, queue, activeId, onSelectQueue, onDelete }) {
   const [imageFile, setImageFile] = useState(null)
   const [pdfFile, setPdfFile]     = useState(null)
   const [loading, setLoading]     = useState(false)
@@ -58,16 +58,22 @@ export default function TopBar({ onVerify, queue, activeId, onSelectQueue, onDel
         <div style={s.verifyWrap}>
           <div style={{ ...s.dropLabel, visibility: 'hidden' }}>_</div>
           {error && <div style={s.error}>{error}</div>}
-          <button
-            style={{ ...s.verifyBtn, opacity: loading ? 0.65 : 1 }}
-            onClick={handleVerify}
-            disabled={loading}
-          >
-            {loading
-              ? <><div style={s.verifyMain}>⏳ Processing…</div></>
-              : <><div style={s.verifyMain}>Verify Label</div><div style={s.verifySub}>Run AI compliance check</div></>
-            }
-          </button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              style={{ ...s.verifyBtn, opacity: loading ? 0.65 : 1 }}
+              onClick={handleVerify}
+              disabled={loading}
+            >
+              {loading
+                ? <><div style={s.verifyMain}>⏳ Processing…</div></>
+                : <><div style={s.verifyMain}>Verify Label</div><div style={s.verifySub}>Run AI compliance check</div></>
+              }
+            </button>
+            <button style={s.bulkBtn} onClick={onBulk} title="Bulk upload multiple labels">
+              <div style={{ fontSize: 13 }}>⇪</div>
+              <div style={{ fontSize: 10, fontWeight: 600 }}>Bulk</div>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -144,6 +150,7 @@ const s = {
   verifyBtn:  { background: '#1a3a5c', color: 'white', border: 'none', borderRadius: 5, padding: '14px 22px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', textAlign: 'center' },
   verifyMain: { fontSize: 13, fontWeight: 700, letterSpacing: 0.2 },
   verifySub:  { fontSize: 10, fontWeight: 400, opacity: 0.75, marginTop: 3 },
+  bulkBtn:    { background: '#f0f4ff', color: '#1a3a5c', border: '1px solid #c5d3f0', borderRadius: 5, padding: '6px 10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 },
 
   divider:    { width: 1, background: '#e0e4ea', alignSelf: 'stretch', margin: '0 16px', flexShrink: 0 },
 

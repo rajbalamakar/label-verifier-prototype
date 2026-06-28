@@ -1,13 +1,15 @@
 import uuid
 import time
 import asyncio
+import json
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Response
 from fastapi.responses import StreamingResponse
 import io
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
-from app.database import get_db
+from app.database import get_db, AsyncSessionLocal
 from app.models import Application, Verification, AuditEvent, AgentDecision
 from app.schemas import VerificationOut, UserInfo
 from app.auth import get_current_user
@@ -17,6 +19,136 @@ from app.services.field_matcher import run_verification
 from app.services.pdf_parser import parse_cola_pdf
 
 router = APIRouter(prefix="/verifications", tags=["verifications"])
+
+
+@router.post("/parse-ids")
+async def parse_pdf_ids(
+    pdf_files: list[UploadFile] = File(...),
+    user: UserInfo = Depends(get_current_user),
+):
+    """Extract COLA IDs from multiple PDFs — used by bulk upload pairing step."""
+    loop = asyncio.get_running_loop()
+    results = []
+    for pdf in pdf_files:
+        pdf_bytes = await pdf.read()
+        cola_id, _ = await loop.run_in_executor(None, parse_cola_pdf, pdf_bytes)
+        results.append({"filename": pdf.filename, "cola_id": cola_id})
+    return results
+
+
+@router.post("/bulk")
+async def verify_bulk(
+    pdf_files: list[UploadFile] = File(...),
+    image_files: list[UploadFile] = File(...),
+    user: UserInfo = Depends(get_current_user),
+):
+    """Process multiple PDF+image pairs, streaming one SSE event per completed verification."""
+    pairs = [
+        {
+            "pdf_bytes":   await pdf.read(),
+            "pdf_name":    pdf.filename,
+            "image_bytes": await img.read(),
+            "image_name":  img.filename,
+        }
+        for pdf, img in zip(pdf_files, image_files)
+    ]
+
+    async def generate():
+        loop = asyncio.get_running_loop()
+        for i, pair in enumerate(pairs):
+            try:
+                async with AsyncSessionLocal() as db:
+                    cola_id, parsed = await loop.run_in_executor(
+                        None, parse_cola_pdf, pair["pdf_bytes"]
+                    )
+                    if not cola_id:
+                        cola_id = f"UPLOAD-{uuid.uuid4().hex[:8].upper()}"
+
+                    pdf_path = await storage.save_file(
+                        pair["pdf_bytes"],
+                        f"{cola_id}_{uuid.uuid4().hex[:8]}.pdf",
+                        subfolder="pdfs",
+                    )
+                    image_path = await storage.save_file(
+                        pair["image_bytes"],
+                        f"{cola_id}_{uuid.uuid4().hex[:8]}_{pair['image_name']}",
+                        subfolder="labels",
+                    )
+
+                    result = await db.execute(
+                        select(Application).where(Application.cola_id == cola_id)
+                    )
+                    app = result.scalar_one_or_none()
+                    if app:
+                        if app.pdf_path and not app.pdf_path.startswith("gs://"):
+                            try:
+                                Path(app.pdf_path).unlink(missing_ok=True)
+                            except Exception:
+                                pass
+                        for k, v in parsed.items():
+                            if v is not None:
+                                setattr(app, k, v)
+                        app.pdf_path = pdf_path
+                    else:
+                        app = Application(cola_id=cola_id, pdf_path=pdf_path, **parsed)
+                        db.add(app)
+
+                    application_dict = {
+                        "brand_name":       app.brand_name or parsed.get("brand_name"),
+                        "class_type":       app.class_type or parsed.get("class_type"),
+                        "alcohol_content":  app.alcohol_content or parsed.get("alcohol_content"),
+                        "net_contents":     app.net_contents or parsed.get("net_contents"),
+                        "bottler_producer": app.bottler_producer or parsed.get("bottler_producer"),
+                        "country_of_origin": app.country_of_origin or parsed.get("country_of_origin"),
+                    }
+
+                    start = time.monotonic()
+                    label_fields = await loop.run_in_executor(
+                        None, extract_label_fields, pair["image_bytes"]
+                    )
+                    field_results, overall_status = await loop.run_in_executor(
+                        None, run_verification, application_dict, label_fields
+                    )
+                    elapsed_ms = int((time.monotonic() - start) * 1000)
+
+                    verification = Verification(
+                        cola_id=cola_id,
+                        label_image_path=image_path,
+                        overall_status=overall_status,
+                        results=[r.model_dump() for r in field_results],
+                        processing_time_ms=elapsed_ms,
+                    )
+                    db.add(verification)
+                    db.add(AuditEvent(
+                        agent_email=user.email,
+                        action="verify_label",
+                        target_cola_id=cola_id,
+                        metadata_={"overall_status": overall_status, "bulk": True},
+                    ))
+                    await db.commit()
+
+                    refreshed = await db.execute(
+                        select(Verification)
+                        .options(
+                            selectinload(Verification.application),
+                            selectinload(Verification.decision),
+                        )
+                        .where(Verification.id == verification.id)
+                    )
+                    v = refreshed.scalar_one()
+                    event = {
+                        "index": i,
+                        "status": "done",
+                        "verification": VerificationOut.model_validate(v).model_dump(mode="json"),
+                    }
+            except Exception as e:
+                event = {"index": i, "status": "error", "error": str(e)}
+
+            yield f"data: {json.dumps(event)}\n\n"
+
+        yield 'data: {"status":"complete"}\n\n'
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 @router.post("/", response_model=VerificationOut)
