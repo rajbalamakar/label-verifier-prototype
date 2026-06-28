@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { parsePdfIds, verifyBulk } from '../api'
 
-export default function BulkModal({ onClose, onComplete }) {
+export default function BulkModal({ onClose, onComplete, onSelect }) {
   const [phase, setPhase]     = useState('drop')
   const [allFiles, setAllFiles] = useState([])
   const [pairs, setPairs]     = useState([])
@@ -256,6 +256,7 @@ export default function BulkModal({ onClose, onComplete }) {
                     <th style={s.th}>PDF</th>
                     <th style={s.th}>Image</th>
                     <th style={{ ...s.th, textAlign: 'center' }}>Result</th>
+                    <th style={s.th}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -266,6 +267,16 @@ export default function BulkModal({ onClose, onComplete }) {
                       <td style={s.td}><span style={{ fontSize: 11 }}>{pair.image?.name}</span></td>
                       <td style={{ ...s.td, textAlign: 'center' }}>
                         <StatusBadge status={pair.status} result={pair.result} err={pair.error} />
+                      </td>
+                      <td style={s.td}>
+                        {pair.result && (
+                          <button
+                            style={s.viewBtn}
+                            onClick={() => onSelect?.(pair.result)}
+                          >
+                            View →
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -333,4 +344,5 @@ const s = {
   cancelBtn:   { background: '#f0f2f5', color: '#555', border: 'none', borderRadius: 5, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' },
   secondaryBtn: { background: 'white', color: '#1a3a5c', border: '1px solid #b0bec5', borderRadius: 5, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' },
   primaryBtn:  { background: '#1a3a5c', color: 'white', border: 'none', borderRadius: 5, padding: '8px 18px', fontSize: 12, fontWeight: 700, cursor: 'pointer' },
+  viewBtn:     { background: 'none', border: '1px solid #c5d3f0', color: '#1a3a5c', borderRadius: 4, padding: '3px 9px', fontSize: 11, fontWeight: 600, cursor: 'pointer' },
 }

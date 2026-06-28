@@ -96,7 +96,7 @@ export default function ResultsPanel({ verification, labelImageUrl, onDecisionSa
       {/* Column 2 — Application data */}
       <div style={s.col}>
         <div style={s.colHeader}>
-          Application Data
+          Application ID
           {application?.cola_id && <span style={s.colaChip}>{application.cola_id}</span>}
         </div>
         <div style={s.appData}>

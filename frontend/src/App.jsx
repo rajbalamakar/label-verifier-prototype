@@ -61,6 +61,12 @@ export default function App() {
         <BulkModal
           onClose={() => setShowBulk(false)}
           onComplete={() => listVerifications(5).then(r => setQueue(r.data)).catch(() => {})}
+          onSelect={(v) => {
+            setShowBulk(false)
+            setVerification(v)
+            setLabelImageUrl(`/api/verifications/${v.id}/label`)
+            setActiveId(v.id)
+          }}
         />
       )}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
