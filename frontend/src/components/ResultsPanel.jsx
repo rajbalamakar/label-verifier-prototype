@@ -31,15 +31,11 @@ function Lightbox({ src, onClose }) {
 
 export default function ResultsPanel({ verification, labelImageUrl, onDecisionSaved }) {
   const application = verification?.application
-  const [notes, setNotes]         = useState('')
-  const [showNotes, setShowNotes] = useState(false)
-  const [saving, setSaving]       = useState(false)
-  const [saved, setSaved]         = useState(null)
-  const [lightbox, setLightbox]   = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved]   = useState(null)
+  const [lightbox, setLightbox] = useState(false)
 
   useEffect(() => {
-    setNotes(verification?.decision?.notes || '')
-    setShowNotes(false)
     setSaved(verification?.decision?.decision || null)
   }, [verification?.id])
 
@@ -61,7 +57,7 @@ export default function ResultsPanel({ verification, labelImageUrl, onDecisionSa
   const handleDecision = async (decision) => {
     setSaving(true)
     try {
-      const res = await submitDecision(verification.id, decision, notes)
+      const res = await submitDecision(verification.id, decision, '')
       setSaved(decision)
       onDecisionSaved?.(verification.id, res.data)
     } catch (e) {
@@ -143,16 +139,6 @@ export default function ResultsPanel({ verification, labelImageUrl, onDecisionSa
           <div style={s.fieldsGrid}>
             {results.map(r => <FieldResultCard key={r.field} result={r} />)}
           </div>
-
-          {showNotes && (
-            <textarea
-              style={s.notes}
-              placeholder="Add notes for this decision…"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              rows={3}
-            />
-          )}
         </div>
 
         {/* Action bar pinned to bottom of column 3 */}
@@ -167,10 +153,6 @@ export default function ResultsPanel({ verification, labelImageUrl, onDecisionSa
             <>
               <button style={{ ...s.btn, background: '#2d7a3a', color: 'white' }} onClick={() => handleDecision('approve')} disabled={saving}>✓ Approve</button>
               <button style={{ ...s.btn, background: '#c0392b', color: 'white' }} onClick={() => handleDecision('reject')} disabled={saving}>✗ Reject</button>
-              <button style={{ ...s.btn, background: '#e0e4ea', color: '#333' }}  onClick={() => handleDecision('hold')}   disabled={saving}>⏸ Hold</button>
-              <button style={{ ...s.btn, background: 'transparent', color: '#1a3a5c', border: '1px solid #b0bec5' }} onClick={() => setShowNotes(v => !v)}>
-                📝 {showNotes ? 'Hide Notes' : 'Add Notes'}
-              </button>
             </>
           )}
         </div>
@@ -211,7 +193,6 @@ const s = {
   /* Results column */
   resultsBody: { flex: 1, overflowY: 'auto', padding: 12, background: '#f5f6f8' },
   fieldsGrid:  { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 },
-  notes:       { width: '100%', marginTop: 10, border: '1px solid #cdd3da', borderRadius: 4, padding: '8px 10px', fontSize: 12, resize: 'vertical', boxSizing: 'border-box' },
 
   actionBar:  { background: 'white', borderTop: '1px solid #e0e4ea', padding: '8px 12px', display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 },
   btn:        { borderRadius: 4, padding: '7px 12px', fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer' },

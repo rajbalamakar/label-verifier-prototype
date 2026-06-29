@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { parsePdfIds, verifyBulk } from '../api'
+import { parsePdfIds, verifyBulk, listVerifications, deleteVerification } from '../api'
 import ResultsPanel from '../components/ResultsPanel'
 
 export default function BulkPage({ onSwitchToSingle }) {
@@ -14,6 +14,54 @@ export default function BulkPage({ onSwitchToSingle }) {
   // Right panel drill-down
   const [selected, setSelected]         = useState(null)
   const [selectedImgUrl, setSelectedImgUrl] = useState(null)
+
+  // Previous verifications (shown in drop phase)
+  const [history, setHistory] = useState([])
+
+  useEffect(() => {
+    listVerifications(20).then(r => setHistory(r.data)).catch(() => {})
+  }, [])
+
+  const refreshHistory = () => listVerifications(20).then(r => setHistory(r.data)).catch(() => {})
+
+  const [leftWidth, setLeftWidth] = useState(360)
+  const dragging = useRef(false)
+  const startX   = useRef(0)
+  const startW   = useRef(0)
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!dragging.current) return
+      const delta = e.clientX - startX.current
+      setLeftWidth(Math.max(240, Math.min(640, startW.current + delta)))
+    }
+    const onMouseUp = () => {
+      dragging.current = false
+      document.body.style.cursor     = ''
+      document.body.style.userSelect = ''
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup',   onMouseUp)
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup',   onMouseUp)
+    }
+  }, [])
+
+  const onDividerMouseDown = (e) => {
+    dragging.current = true
+    startX.current   = e.clientX
+    startW.current   = leftWidth
+    document.body.style.cursor     = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }
+
+  const handleDeleteHistory = async (e, id) => {
+    e.stopPropagation()
+    await deleteVerification(id)
+    setHistory(prev => prev.filter(v => v.id !== id))
+    if (selected?.id === id) { setSelected(null); setSelectedImgUrl(null) }
+  }
 
   const onDrop = useCallback((files) => {
     setAllFiles(files)
@@ -82,7 +130,7 @@ export default function BulkPage({ onSwitchToSingle }) {
     setPairs(prev => prev.map(p => p.matched ? { ...p, status: 'processing' } : p))
     try {
       await verifyBulk(matchedPairs, (event) => {
-        if (event.status === 'complete') { setDone(true); return }
+        if (event.status === 'complete') { setDone(true); refreshHistory(); return }
         setPairs(prev => {
           const next = [...prev]
           let count = 0
@@ -137,11 +185,11 @@ export default function BulkPage({ onSwitchToSingle }) {
     <div style={s.page}>
 
       {/* ── Left panel ── */}
-      <div style={s.left}>
+      <div style={{ ...s.left, width: leftWidth }}>
 
         {/* Left header */}
         <div style={s.leftHeader}>
-          <button style={s.backBtn} onClick={onSwitchToSingle}>← Single Upload</button>
+          <button style={s.backBtn} onClick={onSwitchToSingle}>← Home</button>
           <div style={s.leftTitle}>Bulk Upload</div>
           <div style={s.leftSub}>
             {phase === 'drop'       && 'Drop all PDFs and label images together'}
@@ -162,11 +210,11 @@ export default function BulkPage({ onSwitchToSingle }) {
               }}
             >
               <input {...getInputProps()} />
-              <span style={{ fontSize: 38 }}>📂</span>
+              <span style={{ fontSize: 28 }}>📂</span>
               {allFiles.length === 0 ? (
                 <>
                   <div style={s.dropMain}>Drop PDFs and label images here</div>
-                  <div style={s.dropSub}>Mix all files together — we'll match them automatically</div>
+                  <div style={s.dropSub}>Mix all files together — we'll match them</div>
                 </>
               ) : (
                 <>
@@ -187,6 +235,37 @@ export default function BulkPage({ onSwitchToSingle }) {
               >
                 {parsing ? 'Matching…' : 'Match Files →'}
               </button>
+            </div>
+            <div style={s.historyDivider} />
+            <div style={s.historyLabel}>Previous Verifications</div>
+            <div style={s.historyList}>
+              {history.length === 0 && <div style={s.historyEmpty}>No previous verifications</div>}
+              {history.map(item => (
+                <div
+                  key={item.id}
+                  style={{
+                    ...s.historyRow,
+                    background: selected?.id === item.id ? '#eef3f8' : 'transparent',
+                    boxShadow:  selected?.id === item.id ? 'inset 5px 0 0 #1a3a5c' : 'none',
+                  }}
+                  onClick={() => { setSelected(item); setSelectedImgUrl(`/api/verifications/${item.id}/label`) }}
+                >
+                  <div style={s.historyInfo}>
+                    <div style={s.historyId}>{item.cola_id}</div>
+                    <div style={s.historyTime}>
+                      {new Date(item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                      {' · '}
+                      {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  <HistoryBadge status={item.overall_status} />
+                  <button style={s.historyDelete} title="Delete" onClick={e => handleDeleteHistory(e, item.id)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
             </div>
           </>
         )}
@@ -253,7 +332,6 @@ export default function BulkPage({ onSwitchToSingle }) {
                   <tr>
                     <th style={s.th}>Application ID</th>
                     <th style={{ ...s.th, textAlign: 'center' }}>Result</th>
-                    <th style={s.th}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -262,6 +340,7 @@ export default function BulkPage({ onSwitchToSingle }) {
                       key={i}
                       style={{
                         background: selected?.id === pair.result?.id ? '#eef3f8' : 'white',
+                        boxShadow: selected?.id === pair.result?.id ? 'inset 5px 0 0 #1a3a5c' : 'none',
                         cursor: pair.result ? 'pointer' : 'default',
                       }}
                       onClick={() => pair.result && handleViewRow(pair)}
@@ -269,13 +348,6 @@ export default function BulkPage({ onSwitchToSingle }) {
                       <td style={s.td}><span style={s.colaChip}>{pair.cola_id}</span></td>
                       <td style={{ ...s.td, textAlign: 'center' }}>
                         <StatusBadge status={pair.status} result={pair.result} err={pair.error} />
-                      </td>
-                      <td style={s.td}>
-                        {pair.result && (
-                          <button style={s.viewBtn} onClick={e => { e.stopPropagation(); handleViewRow(pair) }}>
-                            View →
-                          </button>
-                        )}
                       </td>
                     </tr>
                   ))}
@@ -290,6 +362,9 @@ export default function BulkPage({ onSwitchToSingle }) {
           </>
         )}
       </div>
+
+      {/* ── Drag divider ── */}
+      <div style={s.colDivider} onMouseDown={onDividerMouseDown} />
 
       {/* ── Right panel — drill-down ── */}
       <div style={s.right}>
@@ -322,6 +397,22 @@ export default function BulkPage({ onSwitchToSingle }) {
   )
 }
 
+function HistoryStatusIcon({ status }) {
+  const color = status?.startsWith('mismatch') ? '#e65100' : status === 'pass' ? '#2d7a3a' : status === 'fail' ? '#c0392b' : status === 'warn' ? '#e67e22' : '#aaa'
+  if (status === 'pass') return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  if (status === 'fail') return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+  if (status === 'warn') return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+}
+
+function HistoryBadge({ status }) {
+  if (status?.startsWith('mismatch')) return <span style={badge('#ffe8cc', '#7b3f00')}>MISMATCH</span>
+  if (status === 'pass') return <span style={badge('#d4edda', '#1a5928')}>PASS</span>
+  if (status === 'warn') return <span style={badge('#fff3cd', '#856404')}>WARN</span>
+  if (status === 'fail') return <span style={badge('#f8d7da', '#721c24')}>FAIL</span>
+  return null
+}
+
 function StatusBadge({ status, result, err }) {
   if (status === 'pending')    return <span style={{ color: '#aaa', fontSize: 11 }}>—</span>
   if (status === 'processing') return <span style={{ color: '#e67e22', fontSize: 11 }}>⏳</span>
@@ -344,13 +435,14 @@ const s = {
   page:  { flex: 1, display: 'flex', overflow: 'hidden' },
 
   /* Left panel */
-  left:       { width: 360, flexShrink: 0, borderRight: '1px solid #e0e4ea', background: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  left:       { flexShrink: 0, background: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  colDivider: { width: 5, flexShrink: 0, cursor: 'col-resize', background: '#e0e4ea' },
   leftHeader: { padding: '12px 16px', borderBottom: '1px solid #e0e4ea', flexShrink: 0 },
   leftTitle:  { fontSize: 15, fontWeight: 700, color: '#1a3a5c', marginBottom: 2 },
   leftSub:    { fontSize: 11, color: '#888' },
-  backBtn:    { background: 'none', border: 'none', fontSize: 11, color: '#1a3a5c', cursor: 'pointer', padding: 0, marginBottom: 6, fontWeight: 600 },
+  backBtn:    { background: '#eef3f8', border: '1px solid #c5d3f0', borderRadius: 5, fontSize: 13, color: '#1a3a5c', cursor: 'pointer', padding: '5px 10px', marginBottom: 8, fontWeight: 700 },
 
-  dropZone:   { flex: 1, margin: 16, border: '2px dashed', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'all 0.12s', padding: 24, minHeight: 200 },
+  dropZone:   { margin: 16, marginBottom: 0, border: '2px dashed', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', transition: 'all 0.12s', padding: '18px 16px' },
   dropMain:   { fontSize: 13, fontWeight: 600, color: '#333', textAlign: 'center' },
   dropSub:    { fontSize: 11, color: '#888', textAlign: 'center' },
 
@@ -365,9 +457,18 @@ const s = {
   leftFooter:  { display: 'flex', gap: 8, padding: '12px 16px', borderTop: '1px solid #e0e4ea', flexShrink: 0, justifyContent: 'flex-end' },
   error:       { fontSize: 11, color: '#c0392b', padding: '0 16px' },
 
+  historyDivider: { height: 1, background: '#e0e4ea', margin: '4px 0', flexShrink: 0 },
+  historyLabel:   { fontSize: 11, fontWeight: 700, color: '#000', padding: '8px 16px 4px', fontFamily: "'Segoe UI', system-ui, sans-serif" },
+  historyList:    { flex: 1, overflowY: 'auto' },
+  historyEmpty:   { fontSize: 11, color: '#bbb', padding: '6px 16px' },
+  historyRow:     { display: 'flex', alignItems: 'center', gap: 8, padding: '7px 16px 7px 11px', cursor: 'pointer', transition: 'background 0.1s' },
+  historyInfo:    { flex: 1, minWidth: 0 },
+  historyId:      { fontSize: 11, fontWeight: 600, color: '#1a3a5c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  historyTime:    { fontSize: 10, color: '#aaa' },
+  historyDelete:  { background: 'none', border: 'none', color: '#111', cursor: 'pointer', padding: '2px 3px', borderRadius: 3, flexShrink: 0 },
+
   primaryBtn:   { background: '#1a3a5c', color: 'white', border: 'none', borderRadius: 5, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' },
   secondaryBtn: { background: 'white', color: '#1a3a5c', border: '1px solid #b0bec5', borderRadius: 5, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' },
-  viewBtn:      { background: 'none', border: '1px solid #c5d3f0', color: '#1a3a5c', borderRadius: 4, padding: '3px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer' },
 
   /* Right panel */
   right:      { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f5f6f8' },
