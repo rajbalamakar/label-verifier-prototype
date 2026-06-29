@@ -76,7 +76,7 @@ The app has three entry points from the home page:
 Upload one application PDF and one label image → instant field-by-field compliance report → Approve or Reject.
 
 ### Bulk Upload
-Drop multiple PDFs and label images together. The system automatically matches PDF↔image pairs by COLA ID and filename prefix, then processes them in parallel with live streaming results. Click any completed row to drill into the full report.
+Drop multiple PDFs and label images together. The system automatically matches PDF↔image pairs by Label Application ID and filename prefix, then processes them in parallel with live streaming results. Click any completed row to drill into the full report.
 
 ### Recent Verifications
 Browse all previously submitted labels. Click a row to reload the full report and update your decision.
@@ -101,7 +101,7 @@ TTBPrototype/
 │   │   │   └── decisions.py     # /decisions — approve/reject
 │   │   └── services/
 │   │       ├── ocr.py           # Tesseract OCR (Optical Character Recognition) + preprocessing
-│   │       ├── pdf_parser.py    # pdfplumber COLA PDF field extraction
+│   │       ├── pdf_parser.py    # pdfplumber Label Application PDF field extraction
 │   │       ├── field_matcher.py # Field comparison + semantic similarity
 │   │       ├── mismatch.py      # Wrong-label detector
 │   │       └── storage.py       # Local file storage

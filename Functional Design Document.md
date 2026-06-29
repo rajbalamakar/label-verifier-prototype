@@ -26,18 +26,17 @@ The system automates the manual side-by-side comparison task by extracting field
 
 ## 2. Design Principles
 
-These principles reflect the requirements gathered from TTB stakeholders and guided every design decision in the prototype.
+These principles reflect the requirements gathered from TTB stakeholders.
 
 | Principle | Detail |
 |---|---|
-| **No internet required** | The application runs entirely on its own — no data is sent to external services. This meets TTB's network restrictions and ensures label data stays within the agency's environment. |
+| **No internet required** | The application runs entirely on its own — no data is sent to external services. |
 | **Results in seconds** | A single label is verified in under 10 seconds. For bulk submissions, results appear on screen as each label finishes — reviewers do not have to wait for the whole batch to complete. |
-| **Simple, accessible interface** | The application has three clearly labelled entry points and no complex menus. Any reviewer, regardless of technical background, can upload a label and read the results without training. |
-| **Understands natural language variation** | The system recognises that the same name can appear differently on a label — for example "STONE'S THROW" on the bottle versus "Stone's Throw Distillery" in the application. These are treated as a match rather than a failure. |
+| **Simple, accessible interface** | The application has clearly labelled entry points and no complex menus. Any reviewer, regardless of technical background, can upload a label and read the results. |
+| **Understands natural language variation** | The system recognises that the same name can appear differently on a label — for example "STONE'S THROW" on the bottle versus "Stone's Throw" in the application. These are treated as a match rather than a failure. |
 | **Reads imperfect label photos** | Labels photographed in the field are often wrinkled, angled, or poorly lit. The system is built to handle these conditions and still extract the text accurately. |
-| **Batch processing for high-volume days** | Reviewers can drop a large folder of PDFs and label images in one go. The system automatically pairs each PDF with its label image and processes them together, showing live progress as results come in. |
-| **Flags wrong labels before field checking** | If the label image appears to belong to a completely different product — not just a minor variation — the system raises a clear alert before showing field-level results, prompting the reviewer to confirm the correct image was submitted. |
-| **Standalone and self-contained** | The application has no dependency on existing TTB systems. It can be set up and run on a single server with a single command, with no external services required. |
+| **Batch processing** | Reviewers can drop a large folder of PDFs and label images in one go. |
+| **Standalone and self-contained** | The application has no dependency on existing TTB systems. |
 
 ---
 
@@ -69,25 +68,7 @@ Clicking a card navigates to the corresponding page.
 
 ### 4.2 Single Upload Page
 
-**Purpose:** Verify one COLA application against one label image.
-
-**Layout:** Left panel (upload controls + history) | Resizable divider | Right panel (results)
-
-**Left Panel:**
-- Back button → returns to Home
-- **Application PDF** drop zone — accepts one `.pdf` file
-- **Label Image** drop zone — accepts one `.jpg`, `.jpeg`, or `.png` file
-- **Verify Label** button — triggers verification
-- Recent Verifications list — scrollable list of past verifications; clicking any row loads it in the right panel with a blue left-side indicator on the selected row
-
-**Right Panel (Results):**
-Displays after verification or when a history row is selected. Three columns:
-
-| Column | Contents |
-|---|---|
-| Label Image | The uploaded label image (click to open full-screen lightbox) |
-| Application ID | COLA ID chip + extracted application data table |
-| Verification Results | Field-by-field results + overall status banner + Approve / Reject action bar |
+**Purpose:** Verify one Label application against one label image.
 
 **Workflow:**
 1. Reviewer drops application PDF into the PDF drop zone
@@ -103,42 +84,9 @@ Displays after verification or when a history row is selected. Three columns:
 
 **Purpose:** Verify a batch of labels in a single operation.
 
-**Layout:** Left panel (upload + history) | Resizable divider | Right panel (drill-down results)
-
-**Left Panel — Upload Phases:**
-
-The left panel progresses through three phases:
-
-**Phase 1 — Drop**
-- Drop zone accepting any mix of PDF and image files
-- **Match Files** button — triggers automatic pairing
-
-**Phase 2 — Pairing Table**
-- Shows each PDF matched to its label image
-- Match column shows ✓ (matched) or ✗ (no match found) per pair
-- Unmatched items are highlighted and will be skipped
-- **Submit N verifications** button — starts processing
-
-**Phase 3 — Processing**
-- Live progress table; each row updates as its verification completes
-- Status badges update in real time (⏳ → PASS / FAIL / REVIEW / MISMATCH)
-- Clicking any completed row loads its full detail in the right panel
-- **Export CSV** button available once all verifications complete
-- **New Batch** button to start over
-
-**Left Panel — Previous Verifications (shown in Phase 1 only):**
-- Scrollable list of past verifications below the drop zone
-- Shows Application ID, date/time, status badge, and delete button
-- Clicking a row loads the full detail in the right panel
-
-**Right Panel:**
-- Empty state until a row is selected
-- When a row is selected: same 3-column results view as Single Upload (image | app data | results + approve/reject)
-- Selected row is highlighted with a blue left-side indicator
-
 **File Pairing Logic:**
-1. Extract the COLA ID from each PDF's embedded fields
-2. Find a label image whose filename contains that COLA ID
+1. Extract the Application ID from each PDF's embedded fields
+2. Find a label image whose filename contains that Application ID
 3. If no match found, fall back to filename prefix matching
 4. Any PDF or image that cannot be matched is shown as unmatched and excluded from submission
 
@@ -156,18 +104,6 @@ The left panel progresses through three phases:
 **Purpose:** Browse, review, and re-decide on past verifications.
 
 **Layout:** Left panel (verifications table) | Resizable divider | Right panel (detail)
-
-**Left Panel:**
-- Back button → returns to Home
-- Table of all past verifications (most recent first), up to 50 entries
-- Columns: Application ID | Brand Name | Date & Time | Result badge | Delete button
-- Clicking a row highlights it (blue left-side indicator) and loads the full detail in the right panel
-
-**Right Panel:**
-- Same 3-column results view (image | app data | results + approve/reject)
-- Reviewers can update or record a new decision on any past verification
-
----
 
 ## 5. Verification Results
 
@@ -227,7 +163,7 @@ A decision can be updated by revisiting the verification in the Recent Verificat
 
 For each verification the system stores:
 
-- COLA application ID and all extracted application fields
+- Application ID and all extracted application fields
 - Uploaded label image (stored on disk / Docker volume)
 - Field-by-field comparison results and overall status
 - Processing time
@@ -245,14 +181,3 @@ Data is retained indefinitely in v1. Deletion is available per-record from the v
 - Alcohol content tolerance follows TTB regulations: ±0.3% for wine, ±0.15% for spirits.
 - The government warning must match the legally required text exactly (after whitespace normalization). Any deviation is a fail.
 
----
-
-## 9. Non-Functional Requirements
-
-| Requirement | Target |
-|---|---|
-| Single verification response time | < 10 seconds |
-| Bulk streaming | First result visible within 10 seconds of submission |
-| Concurrent users | Single reviewer (v1 prototype) |
-| Data sensitivity | All label data is treated as internal; no raw field values are logged to console or error messages |
-| Offline operation | AI models run locally; no external API calls at verification time |
