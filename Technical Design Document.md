@@ -54,7 +54,7 @@ flowchart LR
 
 ## Design Principles
 
-| Technical Implementation |
+| Principle | Technical Implementation |
 |---|---|
 | **No internet required** | All AI processing runs locally. OCR (Optical Character Recognition) uses Tesseract bundled in the Docker image. Semantic matching uses the `all-MiniLM-L6-v2` sentence-transformer model baked in at build time (`TRANSFORMERS_OFFLINE=1`). No label data is sent to external APIs at any point. |
 | **Results in seconds** | Each verification completes in under 10 seconds. Bulk verifications use Server-Sent Events (SSE) via FastAPI `StreamingResponse` to stream each result to the client as soon as it completes, rather than waiting for the whole batch. |
