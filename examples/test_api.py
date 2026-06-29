@@ -33,12 +33,14 @@ def test(cola_id, label, expected):
     v = r2.json()
     print(f"  Overall      : {v.get('overall_status').upper()} ({v.get('processing_time_ms')}ms)")
     for field in v.get("results", []):
-        icon = {"pass": "✓", "warn": "⚠", "fail": "✗"}.get(field["status"], "?")
+        icon = {"pass": "✓", "review": "⚠", "fail": "✗"}.get(field["status"], "?")
         print(f"  {icon} {field['field']:<20} extracted='{field['extracted']}' | {field.get('detail','')}")
 
 
 if __name__ == "__main__":
     test("TTB-2024-001", "TTB-2024-001_label.jpg", "ALL PASS")
-    test("TTB-2024-002", "TTB-2024-002_label.jpg", "WARN")
+    test("TTB-2024-002", "TTB-2024-002_label.jpg", "REVIEW")
     test("TTB-2024-003", "TTB-2024-003_label.jpg", "FAIL")
+    test("TTB-2024-004", "TTB-2024-004_label.jpg", "REVIEW")
+    test("TTB-2024-005", "TTB-2024-005_label.jpg", "MISMATCH")
     print("\nDone.")

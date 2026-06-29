@@ -1,6 +1,6 @@
 const STATUS_CONFIG = {
   pass:    { icon: '✅', label: 'Match',            color: '#1a5928', border: '#2d7a3a', bg: 'white' },
-  warn:    { icon: '⚠️', label: 'Review Needed',    color: '#856404', border: '#e67e22', bg: 'white' },
+  review:  { icon: '⚠️', label: 'Review Needed',    color: '#856404', border: '#e67e22', bg: 'white' },
   fail:    { icon: '❌', label: 'Mismatch',         color: '#721c24', border: '#c0392b', bg: 'white' },
   missing: { icon: '—',  label: 'Not Found',        color: '#555',    border: '#ccc',    bg: '#fafafa' },
 }

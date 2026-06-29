@@ -32,7 +32,7 @@ class Verification(Base):
     id = Column(Integer, primary_key=True)
     cola_id = Column(String, ForeignKey("applications.cola_id"), nullable=False)
     label_image_path = Column(String)
-    overall_status = Column(String)  # pass, warn, fail
+    overall_status = Column(String)  # pass, review, fail
     results = Column(JSON)           # per-field results
     processing_time_ms = Column(Integer)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

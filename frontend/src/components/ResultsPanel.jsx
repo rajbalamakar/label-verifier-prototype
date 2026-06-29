@@ -4,7 +4,7 @@ import { submitDecision } from '../api'
 
 const OVERALL = {
   pass:     { label: 'ALL FIELDS PASS', color: '#1a5928', bg: '#d4edda' },
-  warn:     { label: 'REVIEW NEEDED',   color: '#856404', bg: '#fff3cd' },
+  review:   { label: 'REVIEW NEEDED',   color: '#856404', bg: '#fff3cd' },
   fail:     { label: 'FAILED',          color: '#721c24', bg: '#f8d7da' },
   mismatch: { label: 'WRONG LABEL?',    color: '#7b3f00', bg: '#ffe8cc' },
 }
@@ -51,7 +51,7 @@ export default function ResultsPanel({ verification, labelImageUrl, onDecisionSa
 
   const mismatchReason = parseMismatch(verification.overall_status)
   const overallKey = mismatchReason ? 'mismatch' : verification.overall_status
-  const overall = OVERALL[overallKey] || OVERALL.warn
+  const overall = OVERALL[overallKey] || OVERALL.review
   const results = verification.results || []
 
   const handleDecision = async (decision) => {

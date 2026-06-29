@@ -32,7 +32,7 @@ export default function TopBar({ onVerify, onSwitchToBulk, queue, activeId, onSe
     }
   }
 
-  const statusColor = { pass: '#2d7a3a', warn: '#e67e22', fail: '#c0392b' }
+  const statusColor = { pass: '#2d7a3a', review: '#e67e22', fail: '#c0392b' }
   const chipColor = (status) => status?.startsWith('mismatch') ? '#e65100' : (statusColor[status] || '#aaa')
 
   return (

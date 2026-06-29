@@ -10,7 +10,7 @@
 
 The TTB Label Verifier is a prototype web application that assists TTB alcohol label reviewers in verifying that a submitted label image matches the corresponding COLA (Certificate of Label Approval) application on file.
 
-The system automates the manual side-by-side comparison task by extracting fields from both documents and checking them programmatically, producing a structured pass/warn/fail compliance report for each label.
+The system automates the manual side-by-side comparison task by extracting fields from both documents and checking them programmatically, producing a structured pass/review/fail compliance report for each label.
 
 **In scope (v1):**
 - Single label verification
@@ -20,12 +20,28 @@ The system automates the manual side-by-side comparison task by extracting field
 
 **Out of scope (v1):**
 - Multi-user tenancy / access control
-- Regulatory rule engine updates
 - Integration with TTB's live COLA database
 
 ---
 
-## 2. User Roles
+## 2. Design Principles
+
+These principles reflect the requirements gathered from TTB stakeholders and guided every design decision in the prototype.
+
+| Principle | Detail |
+|---|---|
+| **No internet required** | The application runs entirely on its own — no data is sent to external services. This meets TTB's network restrictions and ensures label data stays within the agency's environment. |
+| **Results in seconds** | A single label is verified in under 10 seconds. For bulk submissions, results appear on screen as each label finishes — reviewers do not have to wait for the whole batch to complete. |
+| **Simple, accessible interface** | The application has three clearly labelled entry points and no complex menus. Any reviewer, regardless of technical background, can upload a label and read the results without training. |
+| **Understands natural language variation** | The system recognises that the same name can appear differently on a label — for example "STONE'S THROW" on the bottle versus "Stone's Throw Distillery" in the application. These are treated as a match rather than a failure. |
+| **Reads imperfect label photos** | Labels photographed in the field are often wrinkled, angled, or poorly lit. The system is built to handle these conditions and still extract the text accurately. |
+| **Batch processing for high-volume days** | Reviewers can drop a large folder of PDFs and label images in one go. The system automatically pairs each PDF with its label image and processes them together, showing live progress as results come in. |
+| **Flags wrong labels before field checking** | If the label image appears to belong to a completely different product — not just a minor variation — the system raises a clear alert before showing field-level results, prompting the reviewer to confirm the correct image was submitted. |
+| **Standalone and self-contained** | The application has no dependency on existing TTB systems. It can be set up and run on a single server with a single command, with no external services required. |
+
+---
+
+## 3. User Roles
 
 | Role | Description |
 |---|---|
@@ -35,9 +51,9 @@ The system automates the manual side-by-side comparison task by extracting field
 
 ---
 
-## 3. Application Pages
+## 4. Application Pages
 
-### 3.1 Home Page
+### 4.1 Home Page
 
 The entry point of the application. Displays three cards:
 
@@ -51,7 +67,7 @@ Clicking a card navigates to the corresponding page.
 
 ---
 
-### 3.2 Single Upload Page
+### 4.2 Single Upload Page
 
 **Purpose:** Verify one COLA application against one label image.
 
@@ -83,7 +99,7 @@ Displays after verification or when a history row is selected. Three columns:
 
 ---
 
-### 3.3 Bulk Upload Page
+### 4.3 Bulk Upload Page
 
 **Purpose:** Verify a batch of labels in a single operation.
 
@@ -105,7 +121,7 @@ The left panel progresses through three phases:
 
 **Phase 3 — Processing**
 - Live progress table; each row updates as its verification completes
-- Status badges update in real time (⏳ → PASS / FAIL / WARN / MISMATCH)
+- Status badges update in real time (⏳ → PASS / FAIL / REVIEW / MISMATCH)
 - Clicking any completed row loads its full detail in the right panel
 - **Export CSV** button available once all verifications complete
 - **New Batch** button to start over
@@ -135,7 +151,7 @@ The left panel progresses through three phases:
 
 ---
 
-### 3.4 Recent Verifications Page
+### 4.4 Recent Verifications Page
 
 **Purpose:** Browse, review, and re-decide on past verifications.
 
@@ -153,32 +169,32 @@ The left panel progresses through three phases:
 
 ---
 
-## 4. Verification Results
+## 5. Verification Results
 
-### 4.1 Field-Level Results
+### 5.1 Field-Level Results
 
 Each verified field produces one of these statuses:
 
 | Status | Meaning |
 |---|---|
 | **Pass** | Field matches within acceptable tolerance |
-| **Warn** | Field is close but outside tolerance — manual review recommended |
+| **Review** | Field is close but outside tolerance — manual review recommended |
 | **Fail** | Field clearly does not match |
 
-### 4.2 Overall Status
+### 5.2 Overall Status
 
 The overall status for a verification is derived from its field results:
 
 | Overall Status | Condition |
 |---|---|
 | **Pass** | All fields pass |
-| **Warn** | At least one field is warn, none fail |
+| **Review** | At least one field is review, none fail |
 | **Fail** | At least one field fails |
 | **Mismatch** | Brand name similarity is very low — the label image may belong to a different product entirely |
 
 A **Mismatch** banner is shown prominently at the top of the results column when this is detected, advising the reviewer to confirm the correct label was submitted before interpreting field results.
 
-### 4.3 Fields Checked
+### 5.3 Fields Checked
 
 | Field | Comparison Method |
 |---|---|
@@ -192,7 +208,7 @@ A **Mismatch** banner is shown prominently at the top of the results column when
 
 ---
 
-## 5. Reviewer Decisions
+## 6. Reviewer Decisions
 
 After reviewing results, the reviewer selects one of:
 
@@ -207,7 +223,7 @@ A decision can be updated by revisiting the verification in the Recent Verificat
 
 ---
 
-## 6. Data Retained
+## 7. Data Retained
 
 For each verification the system stores:
 
@@ -221,7 +237,7 @@ Data is retained indefinitely in v1. Deletion is available per-record from the v
 
 ---
 
-## 7. Business Rules
+## 8. Business Rules
 
 - A label must have both a PDF and an image to be verified. Neither alone produces a result.
 - Bulk pairing is automatic. If a PDF and image cannot be matched, the pair is skipped; the reviewer is notified.
@@ -231,7 +247,7 @@ Data is retained indefinitely in v1. Deletion is available per-record from the v
 
 ---
 
-## 8. Non-Functional Requirements
+## 9. Non-Functional Requirements
 
 | Requirement | Target |
 |---|---|

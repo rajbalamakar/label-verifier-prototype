@@ -306,7 +306,7 @@ function StatusBadge({ status, result, err }) {
   const os = result.overall_status
   if (os?.startsWith('mismatch')) return <span style={badge('#ffe8cc', '#7b3f00')}>MISMATCH</span>
   if (os === 'pass') return <span style={badge('#d4edda', '#1a5928')}>PASS</span>
-  if (os === 'warn') return <span style={badge('#fff3cd', '#856404')}>WARN</span>
+  if (os === 'review') return <span style={badge('#fff3cd', '#856404')}>REVIEW</span>
   if (os === 'fail') return <span style={badge('#f8d7da', '#721c24')}>FAIL</span>
   return null
 }

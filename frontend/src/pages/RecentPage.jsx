@@ -3,13 +3,13 @@ import ResultsPanel from '../components/ResultsPanel'
 import { listVerifications, deleteVerification } from '../api'
 
 const STATUS_COLOR = {
-  pass: '#2d7a3a', fail: '#c0392b', warn: '#e67e22',
+  pass: '#2d7a3a', fail: '#c0392b', review: '#e67e22',
 }
 const dotColor = (s) => s?.startsWith('mismatch') ? '#e65100' : (STATUS_COLOR[s] || '#aaa')
 
 const BADGE = {
   pass:     { bg: '#d4edda', color: '#1a5928', label: 'PASS' },
-  warn:     { bg: '#fff3cd', color: '#856404', label: 'WARN' },
+  review:   { bg: '#fff3cd', color: '#856404', label: 'REVIEW' },
   fail:     { bg: '#f8d7da', color: '#721c24', label: 'FAIL' },
 }
 

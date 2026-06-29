@@ -2,72 +2,30 @@
 
 AI-powered alcohol label compliance prototype for the Alcohol and Tobacco Tax and Trade Bureau (TTB).
 
-Reviewers upload a COLA application PDF and the corresponding label image. The system extracts fields from both, compares them field-by-field using OCR and semantic similarity, and returns a pass/warn/fail report with mismatch detection.
+Reviewers upload a Label application PDF and the corresponding label image. The system extracts fields from both, compares them field-by-field using OCR (Optical Character Recognition) and semantic similarity, and returns a pass/review/fail report with mismatch detection.
 
 ---
 
 ## Prerequisites
 
-- Python 3.11+
-- Node 20+
-- Tesseract OCR installed locally (for non-Docker dev)
-  - Windows: https://github.com/UB-Mannheim/tesseract/wiki
-  - macOS: `brew install tesseract`
-  - Linux: `sudo apt install tesseract-ocr tesseract-ocr-eng`
-- Docker + Docker Compose (for containerised run)
+- Docker and Docker Compose
 
 ---
 
-## Local Development
-
-### 1. Backend
-
-```bash
-cd backend
-
-# Create and activate virtual environment
-python -m venv ttb_venv
-source ttb_venv/bin/activate      # Windows: ttb_venv\Scripts\activate
-
-# Install dependencies (CPU-only PyTorch first to avoid 3GB CUDA download)
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-pip install -r requirements.txt
-
-# Copy and edit environment config
-cp .env.example .env
-
-# Start the backend
-uvicorn app.main:app --reload --port 8000
-```
-
-First run downloads the `all-MiniLM-L6-v2` sentence-transformer model (~90MB). Subsequent starts are fast.
-
-Database defaults to SQLite at `./labelcheck.db` — no setup needed.
-
-### 2. Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open http://localhost:5173
-
-> **Dev mode is on by default.** Google OAuth is bypassed and you are signed in as `agent@ttb.gov`. To enable real auth, set `DEV_MODE=false` in `.env` and add Google OAuth credentials.
-
----
-
-## Docker (Full Stack)
+## Setup and Run
 
 ```bash
 docker compose up --build
 ```
 
-- App (via nginx): http://localhost:80
-- Backend API: http://localhost:8000/docs
+- App: http://localhost:80
+- API docs: http://localhost:8000/docs
 
-SQLite database and uploaded files are stored on a named Docker volume (`app_data`) and persist across container restarts.
+The first build downloads the AI model weights (~90MB) and installs all dependencies — this takes a few minutes. Subsequent starts are fast.
+
+All data (database and uploaded files) is stored on a Docker volume and persists across restarts.
+
+> **Dev mode is on by default.** You are signed in automatically as `agent@ttb.gov` with no login required.
 
 ---
 
@@ -142,7 +100,7 @@ TTBPrototype/
 │   │   │   ├── verifications.py # /verifications — single, bulk SSE, parse-ids
 │   │   │   └── decisions.py     # /decisions — approve/reject
 │   │   └── services/
-│   │       ├── ocr.py           # Tesseract OCR + preprocessing
+│   │       ├── ocr.py           # Tesseract OCR (Optical Character Recognition) + preprocessing
 │   │       ├── pdf_parser.py    # pdfplumber COLA PDF field extraction
 │   │       ├── field_matcher.py # Field comparison + semantic similarity
 │   │       ├── mismatch.py      # Wrong-label detector

@@ -1,11 +1,13 @@
 """
-Generates 3 synthetic test examples, each with:
+Generates 5 synthetic test examples, each with:
   - A COLA application PDF (simulates what agents download from the COLA system)
   - A label image (JPG, simulates the physical bottle label photo)
 
 Example 1: TTB-2024-001 -- Ridgeline Cabernet Sauvignon (ALL PASS)
-Example 2: TTB-2024-002 -- Stone's Throw Bourbon (WARN: brand case variation + ABV within tolerance)
+Example 2: TTB-2024-002 -- Stone's Throw Bourbon (REVIEW: brand abbreviation + ABV within tolerance)
 Example 3: TTB-2024-003 -- Cascade IPA Reserve (FAIL: ABV mismatch exceeds tolerance + warning missing)
+Example 4: TTB-2024-004 -- Coastal Ridge Chardonnay (REVIEW: abbreviated brand + ABV 0.2pct off + producer wording variation)
+Example 5: TTB-2024-005 -- Napa Hills Pinot Noir (MISMATCH: wrong label submitted -- bourbon label on a wine application)
 """
 
 from pathlib import Path
@@ -51,7 +53,7 @@ EXAMPLES = [
     },
     {
         "cola_id": "TTB-2024-002",
-        "expected_result": "WARN: brand case variation + ABV within +/-0.3pct tolerance",
+        "expected_result": "REVIEW: brand case variation + ABV within +/-0.3pct tolerance",
         "app": {
             "Brand Name":        "Stone's Throw Distillery",
             "Class/Type":        "Bourbon Whiskey",
@@ -73,6 +75,59 @@ EXAMPLES = [
             "warning":  GOVT_WARNING,
             "bg":       (210, 185, 140),
             "accent":   (60, 30, 10),
+        },
+    },
+    {
+        "cola_id": "TTB-2024-004",
+        "expected_result": "REVIEW: abbreviated brand + ABV 0.2pct off (within wine tolerance) + producer wording variation",
+        "app": {
+            "Brand Name":        "Coastal Ridge Estate Wines",
+            "Class/Type":        "Chardonnay",
+            "Alcohol Content":   "13.5% by volume",
+            "Net Contents":      "750 mL",
+            "Bottler/Producer":  "Coastal Ridge Estate Winery, LLC",
+            "Address":           "3300 Vineyard Lane, Sonoma, CA 95476",
+            "Country of Origin": "United States",
+            "Govt Warning":      "Required (standard text)",
+        },
+        "label": {
+            "brand":    "COASTAL RIDGE",               # "Estate Wines" omitted — semantic review
+            "type":     "CHARDONNAY",
+            "abv":      "ALC. 13.3% BY VOL.",          # 0.2% below 13.5% — within ±0.3 wine tolerance → review
+            "vol":      "750 mL",
+            "producer": "PRODUCED & BOTTLED BY COASTAL RIDGE WINERY",  # "Estate" and "LLC" absent → review
+            "address":  "3300 Vineyard Lane, Sonoma, CA 95476",
+            "origin":   "PRODUCT OF USA",
+            "warning":  GOVT_WARNING,
+            "bg":       (235, 240, 225),
+            "accent":   (40, 80, 50),
+        },
+    },
+    {
+        "cola_id": "TTB-2024-005",
+        "expected_result": "MISMATCH: wrong label submitted -- bourbon label on a wine application",
+        "app": {
+            "Brand Name":        "Napa Hills Estate",
+            "Class/Type":        "Pinot Noir",
+            "Alcohol Content":   "13.5% by volume",
+            "Net Contents":      "750 mL",
+            "Bottler/Producer":  "Napa Hills Estate Winery",
+            "Address":           "2200 Silverado Trail, Napa Valley, CA 94558",
+            "Country of Origin": "United States",
+            "Govt Warning":      "Required (standard text)",
+        },
+        "label": {
+            # Completely different product: a bourbon label uploaded by mistake
+            "brand":    "KENTUCKY GOLD DISTILLERY",
+            "type":     "STRAIGHT BOURBON WHISKEY",
+            "abv":      "ALC. 45.0% BY VOL.",
+            "vol":      "750 mL",
+            "producer": "DISTILLED AND BOTTLED BY KENTUCKY GOLD DISTILLERY",
+            "address":  "100 Distillery Row, Bardstown, KY 40004",
+            "origin":   "PRODUCT OF USA",
+            "warning":  GOVT_WARNING,
+            "bg":       (200, 175, 120),
+            "accent":   (80, 40, 10),
         },
     },
     {

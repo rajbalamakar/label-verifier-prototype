@@ -28,7 +28,7 @@ class FieldResult(BaseModel):
     field: str
     expected: Optional[Any] = None
     extracted: Optional[Any] = None
-    status: str          # pass, warn, fail, missing
+    status: str          # pass, review, fail, missing
     confidence: float
     detail: Optional[str] = None
 

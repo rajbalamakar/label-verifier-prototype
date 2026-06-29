@@ -64,7 +64,7 @@ def verify_brand_name(expected: str, extracted: str) -> FieldResult:
                            status="pass", confidence=sim, detail="Case-normalized match")
     if sim >= 0.75:
         return FieldResult(field="brand_name", expected=expected, extracted=extracted,
-                           status="warn", confidence=sim, detail=f"Similarity {sim:.0%} — agent review recommended")
+                           status="review", confidence=sim, detail=f"Similarity {sim:.0%} — agent review recommended")
     return FieldResult(field="brand_name", expected=expected, extracted=extracted,
                        status="fail", confidence=sim, detail=f"Similarity {sim:.0%} — mismatch")
 
@@ -75,7 +75,7 @@ def verify_class_type(expected: str, extracted: str) -> FieldResult:
                            status="fail", confidence=0.0, detail="Not found on label")
     match = expected.strip().upper() == extracted.strip().upper()
     sim = semantic_similarity(expected, extracted)
-    status = "pass" if match or sim >= 0.9 else ("warn" if sim >= 0.75 else "fail")
+    status = "pass" if match or sim >= 0.9 else ("review" if sim >= 0.75 else "fail")
     return FieldResult(field="class_type", expected=expected, extracted=extracted,
                        status=status, confidence=sim)
 
@@ -94,7 +94,7 @@ def verify_alcohol_content(expected: float, extracted: float,
                            status="pass", confidence=1.0)
     if delta <= tolerance:
         return FieldResult(field="alcohol_content", expected=expected, extracted=extracted,
-                           status="warn", confidence=0.85,
+                           status="review", confidence=0.85,
                            detail=f"Δ {delta:.1f}% — within ±{tolerance}% tolerance")
     return FieldResult(field="alcohol_content", expected=expected, extracted=extracted,
                        status="fail", confidence=0.0,
@@ -122,7 +122,7 @@ def verify_bottler(expected: str, extracted: str) -> FieldResult:
         return FieldResult(field="bottler_producer", expected=expected, extracted=None,
                            status="fail", confidence=0.0, detail="Bottler/producer not found")
     sim = semantic_similarity(expected, extracted)
-    status = "pass" if sim >= 0.85 else ("warn" if sim >= 0.70 else "fail")
+    status = "pass" if sim >= 0.85 else ("review" if sim >= 0.70 else "fail")
     return FieldResult(field="bottler_producer", expected=expected, extracted=extracted,
                        status=status, confidence=sim)
 
@@ -196,7 +196,7 @@ def verify_govt_warning(extracted_warning: Optional[str]) -> FieldResult:
 
     if overlap >= 0.5 or phrases_found >= 2:
         return FieldResult(field="govt_warning", expected="Required (standard text)",
-                           extracted="Partial", status="warn", confidence=round(overlap, 2),
+                           extracted="Partial", status="review", confidence=round(overlap, 2),
                            detail=f"Warning present but may be incomplete ({phrases_found}/{len(WARNING_KEY_PHRASES)} key phrases)")
 
     return FieldResult(field="govt_warning", expected="Required (standard text)",
@@ -293,12 +293,12 @@ def run_verification(application: dict, label_fields: dict) -> tuple[list[FieldR
     if mismatch_reason:
         return results, f"mismatch:{mismatch_reason}"
 
-    # Overall status: any fail → fail, any warn → warn, else pass
+    # Overall status: any fail → fail, any review → review, else pass
     statuses = {r.status for r in results}
     if "fail" in statuses:
         overall = "fail"
-    elif "warn" in statuses:
-        overall = "warn"
+    elif "review" in statuses:
+        overall = "review"
     else:
         overall = "pass"
 

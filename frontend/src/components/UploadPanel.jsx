@@ -36,7 +36,7 @@ export default function UploadPanel({ onVerify, queue, activeId, onSelectQueue, 
     }
   }
 
-  const statusColor = { pass: '#2d7a3a', warn: '#e67e22', fail: '#c0392b' }
+  const statusColor = { pass: '#2d7a3a', review: '#e67e22', fail: '#c0392b' }
 
   return (
     <div style={s.panel}>
