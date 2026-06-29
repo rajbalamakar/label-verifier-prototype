@@ -188,5 +188,5 @@ const s = {
   colaChip:  { fontSize: 11, fontWeight: 600, color: '#1a3a5c', background: '#eef3f8', borderRadius: 3, padding: '2px 7px' },
   brandName: { color: '#333' },
   dateText:  { color: '#888', fontSize: 11 },
-  deleteBtn: { background: 'none', border: 'none', color: '#111', cursor: 'pointer', padding: '2px 4px', borderRadius: 3 },
+  deleteBtn: { display: 'none' },
 }

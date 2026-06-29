@@ -165,5 +165,5 @@ const s = {
   chipInfo:   { flex: 1, minWidth: 0 },
   chipId:     { fontSize: 11, fontWeight: 600, color: '#1a3a5c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   chipTime:   { fontSize: 10, color: '#aaa' },
-  chipDelete: { background: 'none', border: 'none', color: '#ccc', fontSize: 10, cursor: 'pointer', padding: '1px 3px', borderRadius: 3, flexShrink: 0, lineHeight: 1 },
+  chipDelete: { display: 'none' },
 }

@@ -465,7 +465,7 @@ const s = {
   historyInfo:    { flex: 1, minWidth: 0 },
   historyId:      { fontSize: 11, fontWeight: 600, color: '#1a3a5c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   historyTime:    { fontSize: 10, color: '#aaa' },
-  historyDelete:  { background: 'none', border: 'none', color: '#111', cursor: 'pointer', padding: '2px 3px', borderRadius: 3, flexShrink: 0 },
+  historyDelete:  { display: 'none' },
 
   primaryBtn:   { background: '#1a3a5c', color: 'white', border: 'none', borderRadius: 5, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' },
   secondaryBtn: { background: 'white', color: '#1a3a5c', border: '1px solid #b0bec5', borderRadius: 5, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' },

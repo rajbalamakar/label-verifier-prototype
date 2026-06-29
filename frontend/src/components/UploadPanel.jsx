@@ -121,5 +121,5 @@ const s = {
   queueName: { fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   queueTime: { fontSize: 10, color: '#888', marginTop: 2 },
   statusDot: { width: 8, height: 8, borderRadius: '50%', flexShrink: 0 },
-  deleteBtn: { marginLeft: 4, background: 'none', border: 'none', color: '#bbb', fontSize: 11, cursor: 'pointer', padding: '2px 4px', borderRadius: 3, lineHeight: 1, flexShrink: 0 },
+  deleteBtn: { display: 'none' },
 }

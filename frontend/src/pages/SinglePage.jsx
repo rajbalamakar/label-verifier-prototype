@@ -271,5 +271,5 @@ const s = {
   queueInfo:    { flex: 1, minWidth: 0 },
   queueId:      { fontSize: 11, fontWeight: 600, color: '#1a3a5c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   queueTime:    { fontSize: 10, color: '#aaa' },
-  deleteBtn:    { background: 'none', border: 'none', color: '#111', cursor: 'pointer', padding: '2px 3px', borderRadius: 3, flexShrink: 0 },
+  deleteBtn:    { display: 'none' },
 }
