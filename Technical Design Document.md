@@ -27,31 +27,19 @@ Reviewers then make an Approve or Reject decision, which is stored for audit pur
 ## Architecture
 
 ```mermaid
-graph LR
-    Reviewer["Reviewer\nTTB Agent"]
+flowchart LR
+    Rev["Reviewer\nTTB Agent"]
 
-    subgraph App["Web Application"]
-        direction TB
-        A1["Single Upload"]
-        A2["Bulk Upload"]
-        A3["Recent Verifications"]
-        A4["Approve / Reject"]
-    end
+    App["Web Application\n──────────────\nSingle Upload\nBulk Upload\nRecent Verifications\nApprove / Reject"]
 
-    subgraph Engine["Verification Engine"]
-        direction TB
-        E1["Extract PDF fields"]
-        E2["Read label image"]
-        E3["Compare fields"]
-        E4["Detect mismatches"]
-    end
+    Eng["Verification Engine\n──────────────\nExtract PDF fields\nRead label image\nCompare fields\nDetect mismatches"]
 
     Store[("Data Store\nResults · Decisions · Images")]
 
-    Reviewer -->|"PDF + Image"| App
-    App -->|"Verify"| Engine
-    Engine -->|"Pass / Review / Fail"| App
-    Engine -.->|"Save"| Store
+    Rev -->|"PDF + Image"| App
+    App -->|"Verify"| Eng
+    Eng -->|"Pass / Review / Fail"| App
+    Eng -.->|"Save"| Store
     App -.->|"Load history"| Store
 ```
 
